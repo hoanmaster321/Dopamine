@@ -16,30 +16,6 @@ void execute_unsandboxed(void (^block)(void))
 	jbclient_root_steal_ucred(credBackup, NULL);
 }
 
-void initMountPath(NSString *mountPath)
-{
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    bool new = NO;
-
-    if([fileManager fileExistsAtPath:mountPath]){
-        NSString *newPath = NSJBRootPath(mountPath); 
-
-        if (![fileManager fileExistsAtPath:newPath]) {
-            [fileManager createDirectoryAtPath:newPath withIntermediateDirectories:YES attributes:nil error:nil];
-            new = YES;
-        } else if([fileManager contentsOfDirectoryAtPath:newPath error:nil].count == 0){
-            new = YES;
-        }
-
-        if(new){
-            NSString *tmpPath = [NSString stringWithFormat:@"%@_tmp", newPath];
-            [fileManager copyItemAtPath:mountPath toPath:tmpPath error:nil];
-            [fileManager removeItemAtPath:newPath error:nil];
-            [fileManager moveItemAtPath:tmpPath toPath:newPath error:nil];
-        }
-    }
-}
-
 int mount_unsandboxed(const char *type, const char *dir, int flags, void *data)
 {
 	__block int r = 0;
@@ -64,6 +40,30 @@ void ensureProtectionActive(void)
 	// This protects dumb users from accidentally deleting these, which would induce a recovery loop after rebooting
 	ensureProtected(prebootUUIDPath("/System"));
 	ensureProtected(prebootUUIDPath("/usr"));
+}
+
+void initMountPath(NSString *mountPath)
+{
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    bool new = NO;
+
+    if([fileManager fileExistsAtPath:mountPath]){
+        NSString *newPath = JBROOT_PATH(mountPath);
+
+        if (![fileManager fileExistsAtPath:newPath]) {
+            [fileManager createDirectoryAtPath:newPath withIntermediateDirectories:YES attributes:nil error:nil];
+            new = YES;
+        } else if([fileManager contentsOfDirectoryAtPath:newPath error:nil].count == 0){
+            new = YES;
+        }
+
+        if(new){
+            NSString *tmpPath = [NSString stringWithFormat:@"%@_tmp", newPath];
+            [fileManager copyItemAtPath:mountPath toPath:tmpPath error:nil];
+            [fileManager removeItemAtPath:newPath error:nil];
+            [fileManager moveItemAtPath:tmpPath toPath:newPath error:nil];
+        }
+    }
 }
 
 int jbctl_handle_internal(const char *command, int argc, char* argv[])
@@ -173,7 +173,8 @@ int jbctl_handle_internal(const char *command, int argc, char* argv[])
 			// This allows us to mount to paths that would otherwise be restricted by sandbox
 			printf("Applying mount %s...\n",argv[1]);
 			initMountPath([NSString stringWithUTF8String:argv[1]]);
-			ret = mount("bindfs", argv[1], MNT_RDONLY, (void *)JBRootPath(argv[1]));
+			// NSString *newMountPath = [NSString stringWithFormat:@"%@%s", JBROOT_PATH(@"/mnt"), argv[1]];
+			ret = mount("bindfs", argv[1], MNT_RDONLY, (void *)JBROOT_PATH(argv[1]));
 			printf("ret = %d\n",ret);
 			// revert
 			printf("Dropping kernel ucred...\n");
