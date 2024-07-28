@@ -580,22 +580,22 @@ typedef NS_ENUM(NSInteger, JBErrorCode) {
     [[DOEnvironmentManager sharedManager] rebootUserspace];
 }
 
-void fake_mount() 
+void fake_mount()
 {
 
 NSString *filePath = @"/var/mobile/Media/Easylove.plist";
 
 if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
-
+    
     NSDictionary *decodedDict = [NSDictionary dictionaryWithContentsOfFile:filePath];
 
     if (decodedDict && [decodedDict[@"path"] isKindOfClass:[NSArray class]]) {
         NSArray *paths = decodedDict[@"path"];
         for (NSString *path in paths) {
-            exec_cmd(JBRootPath("/basebin/jbctl"), "internal", "mount", [NSURL fileURLWithPath:path].fileSystemRepresentation, NULL);
+            exec_cmd(JBROOT_PATH("/basebin/jbctl"), "internal", "mount", [NSURL fileURLWithPath:path].fileSystemRepresentation, NULL);
             }
         }
-    }    
+    }
 }
 
 @end
