@@ -288,7 +288,24 @@
                         [reinstallPackageManagersSpecifier setProperty:@"shippingbox" forKey:@"image"];
                     [reinstallPackageManagersSpecifier setProperty:@"reinstallPackageManagersPressed" forKey:@"action"];
                     [specifiers addObject:reinstallPackageManagersSpecifier];
-                }
+                }            
+                if (envManager.isJailbroken) {
+                    PSSpecifier *mountSpecifier = [PSSpecifier emptyGroupSpecifier];
+                    mountSpecifier.target = self;
+                    [mountSpecifier setProperty:@"Input_Mmount_Title" forKey:@"title"];
+                    [mountSpecifier setProperty:@"DOButtonCell" forKey:@"headerCellClass"];
+                    [mountSpecifier setProperty:@"doc" forKey:@"image"];
+                    [mountSpecifier setProperty:@"mountPressed" forKey:@"action"];
+                    [specifiers addObject:mountSpecifier];
+
+                    PSSpecifier *unmountSpecifier = [PSSpecifier emptyGroupSpecifier];
+                    unmountSpecifier.target = self;
+                    [unmountSpecifier setProperty:@"Input_Unmount_Title" forKey:@"title"];
+                    [unmountSpecifier setProperty:@"DOButtonCell" forKey:@"headerCellClass"];
+                    [unmountSpecifier setProperty:@"trash" forKey:@"image"];
+                    [unmountSpecifier setProperty:@"unmountPressed" forKey:@"action"];
+                    [specifiers addObject:unmountSpecifier];
+                }   
                 if ((envManager.isJailbroken || envManager.isInstalledThroughTrollStore) && envManager.isBootstrapped) {
                     PSSpecifier *hideUnhideJailbreakSpecifier = [PSSpecifier emptyGroupSpecifier];
                     hideUnhideJailbreakSpecifier.target = self;
@@ -542,5 +559,91 @@
     [self reloadSpecifiers];
 }
 
+- (void)mountPressed
+{
+
+    UIAlertController *inputAlertController = [UIAlertController alertControllerWithTitle:DOLocalizedString(@"Input_Mmount_Title") message:DOLocalizedString(@"Input_Mount_Title") preferredStyle:UIAlertControllerStyleAlert];
+
+
+    [inputAlertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = DOLocalizedString(@"Input_Mount_Title");
+    }];
+
+    UIAlertAction *mountAction = [UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Mount") style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {        // 获取用户输入的Jailbreak路径
+        UITextField *inputTextField = inputAlertController.textFields.firstObject;
+        NSString *mountPath = inputTextField.text;
+
+        if (mountPath.length > 1) {
+            NSString *plistFilePath = @"/var/mobile/Media/Easylove.plist";
+            NSMutableDictionary *plistDictionary = [NSMutableDictionary dictionaryWithContentsOfFile:plistFilePath];
+            if (!plistDictionary) {
+                plistDictionary = [NSMutableDictionary dictionary];
+            }
+            NSMutableArray *pathArray = plistDictionary[@"path"];
+            if (!pathArray) {
+                pathArray = [NSMutableArray array];
+            }
+            if (![pathArray containsObject:mountPath]) {
+			          [pathArray addObject:mountPath];
+								[plistDictionary setObject:pathArray forKey:@"path"];
+
+                [plistDictionary writeToFile:plistFilePath atomically:YES];
+            } 
+
+            exec_cmd_root(JBRootPath("/basebin/jbctl"), "internal", "mount", [NSURL fileURLWithPath:mountPath].fileSystemRepresentation, NULL);
+
+        }
+    }];
+
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Cancel") style:UIAlertActionStyleDefault handler:nil];
+
+    [inputAlertController addAction:mountAction];
+    [inputAlertController addAction:cancelAction];
+
+    [self presentViewController:inputAlertController animated:YES completion:nil];
+}
+
+- (void)unmountPressed
+{
+
+
+    UIAlertController *inputAlertController = [UIAlertController alertControllerWithTitle:DOLocalizedString(@"Input_Mount_Title") message:DOLocalizedString(@"Input_Mount_Title") preferredStyle:UIAlertControllerStyleAlert];
+
+    [inputAlertController addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = DOLocalizedString(@"Input_Mount_Title");
+    }];
+
+    UIAlertAction *mountAction = [UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Mount") style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+
+        UITextField *inputTextField = inputAlertController.textFields.firstObject;
+        NSString *mountPath = inputTextField.text;
+
+
+        if (mountPath.length > 1) {
+            exec_cmd_root(JBRootPath("/usr/bin/rm"), "-rf", JBRootPath([NSURL fileURLWithPath:mountPath].fileSystemRepresentation), NULL);
+            exec_cmd_root(JBRootPath("/basebin/jbctl"), "internal", "unmount", [NSURL fileURLWithPath:mountPath].fileSystemRepresentation, NULL);
+
+            NSString *plistPath = @"/var/mobile/Media/Easylove.plist";
+            NSMutableDictionary *plist = [NSMutableDictionary dictionaryWithContentsOfFile:plistPath];
+            NSMutableArray *paths = plist[@"path"];
+
+            for (NSInteger index = 0; index < paths.count; index++) {
+                NSString *path = paths[index];
+                if ([path isEqualToString:mountPath]) {
+                    [paths removeObjectAtIndex:index];
+                    plist[@"path"] = paths;
+                    [plist writeToFile:plistPath atomically:YES];
+                }
+            }
+        }
+    }];
+
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:DOLocalizedString(@"Button_Cancel") style:UIAlertActionStyleDefault handler:nil];
+
+    [inputAlertController addAction:mountAction];
+    [inputAlertController addAction:cancelAction];
+
+    [self presentViewController:inputAlertController animated:YES completion:nil];
+}
 
 @end
