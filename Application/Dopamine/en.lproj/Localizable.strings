@@ -115,3 +115,13 @@
 "Status_Title_Select_Package_Managers" = "Select Package Manager(s)";
 "Select_Package_Managers_Install_Message" = "If you are unsure which one to select, select Sileo";
 "Continue" = "Continue";
+
+// mount 
+"Input_Mmount_Title" = "Mount";
+"Input_Unmount_Title" = "Unmount";
+"Input_Mount_Title" = "Nhập đường dẫn thư mục gốc";
+"Button_Mount" = "Đồng ý";
+
+//creat 
+"Easylove_a" = "HỘI ĐAM MÊ JAILBREAK VIỆT NAM";
+"Easylove_b" = "Https://sileovn.github.io - Dopamine v2.4.5";
