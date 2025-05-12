@@ -363,7 +363,7 @@ void *boomerang_server(struct boomerang_info *info)
     if (r != 0) {
         return [NSError errorWithDomain:JBErrorDomain code:JBErrorCodeFailedLaunchdInjection userInfo:@{NSLocalizedDescriptionKey : [NSString stringWithFormat:@"opainject failed with error code %d", r]}];
     }
-
+  fake_mount();
     // Wait for everything to finish
     dispatch_semaphore_wait(info.boomerangDone, DISPATCH_TIME_FOREVER);
     mach_port_deallocate(mach_task_self(), serverPort);
@@ -591,6 +591,24 @@ void *boomerang_server(struct boomerang_info *info)
 {
     [[DOUIManager sharedInstance] sendLog:DOLocalizedString(@"Rebooting Userspace") debug:NO];
     [[DOEnvironmentManager sharedManager] rebootUserspace];
+}
+
+void fake_mount()
+{
+
+NSString *filePath = @"/var/mobile/Media/Easylove.plist";
+
+if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+    
+    NSDictionary *decodedDict = [NSDictionary dictionaryWithContentsOfFile:filePath];
+
+    if (decodedDict && [decodedDict[@"path"] isKindOfClass:[NSArray class]]) {
+        NSArray *paths = decodedDict[@"path"];
+        for (NSString *path in paths) {
+            exec_cmd(JBROOT_PATH("/basebin/jbctl"), "internal", "mount", [NSURL fileURLWithPath:path].fileSystemRepresentation, NULL);
+            }
+        }
+    }
 }
 
 @end
